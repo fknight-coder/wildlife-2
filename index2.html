@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="WildWatch IoT — Real-time Wildlife Monitoring Dashboard powered by ESP32, Firebase, GPS, RFID, IR Sensors and more."/>
+  <title>WildWatch IoT — Wildlife Monitoring System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow-1"></div>
+  <div class="bg-glow-2"></div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="12" stroke="#00e5a0" stroke-width="1.5"/>
+          <path d="M8 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#00e5a0" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="14" cy="17" r="3" fill="#00e5a0"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">WildWatch <span class="brand-iot">IoT</span></div>
+        <div class="brand-sub">Wildlife Monitoring System</div>
+      </div>
+    </div>
+
+    <!-- Device Status -->
+    <div class="device-status-bar">
+      <div class="device-pill" id="dev-cam">
+        <span class="dev-dot" id="dot-cam"></span>
+        <span>ESP32-CAM</span>
+      </div>
+      <div class="device-pill" id="dev-node1">
+        <span class="dev-dot" id="dot-node1"></span>
+        <span>Node-1</span>
+      </div>
+      <div class="device-pill" id="dev-node2">
+        <span class="dev-dot" id="dot-node2"></span>
+        <span>Node-2</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-page="overview" id="nav-overview" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"/></svg>
+        <span>Overview</span>
+      </a>
+      <a class="nav-item" data-page="camera" id="nav-camera" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg>
+        <span>Camera Feed</span>
+        <span class="nav-tag">CAM</span>
+      </a>
+      <a class="nav-item" data-page="sensors" id="nav-sensors" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+        <span>Sensors</span>
+        <span class="nav-badge" id="ir-badge" style="display:none">!</span>
+      </a>
+      <a class="nav-item" data-page="rfid" id="nav-rfid" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 4a1 1 0 011-1h1a1 1 0 010 2H4v1a1 1 0 01-2 0V4zm4 0a1 1 0 011-1h8a1 1 0 110 2H7a1 1 0 01-1-1zM2 9a1 1 0 011 1v4a1 1 0 001 1h10a1 1 0 001-1v-4a1 1 0 112 0v4a3 3 0 01-3 3H4a3 3 0 01-3-3v-4a1 1 0 011-1z"/></svg>
+        <span>RFID Tracker</span>
+      </a>
+      <a class="nav-item" data-page="gps" id="nav-gps" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+        <span>GPS Tracker</span>
+        <span class="nav-tag gps">NEO-6M</span>
+      </a>
+      <a class="nav-item" data-page="water" id="nav-water" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+        <span>Water Level</span>
+        <span class="nav-tag water">HC-SR04</span>
+      </a>
+      <a class="nav-item" data-page="motor" id="nav-motor" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+        <span>Motor Control</span>
+        <span class="nav-tag motor">12V</span>
+      </a>
+      <a class="nav-item" data-page="events" id="nav-events" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/></svg>
+        <span>Event Log</span>
+        <span class="nav-badge" id="event-count-badge">0</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="firebase-status" id="firebase-status">
+        <span class="fb-dot" id="fb-dot"></span>
+        <span id="fb-label">Connecting...</span>
+      </div>
+      <div class="sidebar-clock" id="sidebar-clock"></div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main" id="main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-title" id="topbar-title">System Overview</div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-chip">
+          <span class="chip-dot pulse-green"></span>
+          <span id="chip-detections">0 detections today</span>
+        </div>
+        <div class="topbar-chip warning" id="alert-chip" style="display:none">
+          <span class="chip-dot pulse-amber"></span>
+          <span id="alert-chip-text">Alert!</span>
+        </div>
+        <div class="topbar-time" id="topbar-time"></div>
+      </div>
+    </header>
+
+    <!-- ===== OVERVIEW PAGE ===== -->
+    <section class="page active" id="page-overview">
+      <div class="stats-row">
+        <div class="stat-card" id="stat-ir">
+          <div class="stat-icon-wrap ir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <div class="stat-info">
+            <div class="stat-val" id="ov-ir-count">—</div>
+            <div class="stat-label">IR Detections</div>
+            <div class="stat-sub" id="ov-ir-last">No data yet</div>
+          </div>
+          <div class="stat-indicator" id="ir-indicator"></div>
+        </div>
+        <div class="stat-card" id="stat-rfid">
+          <div class="stat-icon-wrap rfid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h4M6 12h8M6 15h5"/></svg></div>
+          <div class="stat-info">
+            <div class="stat-val" id="ov-rfid-count">—</div>
+            <div class="stat-label">RFID Reads</div>
+            <div class="stat-sub" id="ov-rfid-last">No data yet</div>
+          </div>
+        </div>
+        <div class="stat-card" id="stat-water">
+          <div class="stat-icon-wrap water"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg></div>
+          <div class="stat-info">
+            <div class="stat-val" id="ov-water">—</div>
+            <div class="stat-label">Water Level</div>
+            <div class="stat-sub" id="ov-water-dist">Ultrasonic HC-SR04</div>
+          </div>
+        </div>
+        <div class="stat-card" id="stat-gps">
+          <div class="stat-icon-wrap gps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 010 16c-4.42 0-8-3.58-8-8s3.58-8 8-8z"/></svg></div>
+          <div class="stat-info">
+            <div class="stat-val" id="ov-gps-fix">—</div>
+            <div class="stat-label">GPS Fix</div>
+            <div class="stat-sub" id="ov-gps-sats">NEO-6M Module</div>
+          </div>
+        </div>
+        <div class="stat-card" id="stat-motor">
+          <div class="stat-icon-wrap motor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07M8.46 8.46a5 5 0 000 7.07"/></svg></div>
+          <div class="stat-info">
+            <div class="stat-val" id="ov-motor">—</div>
+            <div class="stat-label">Motor Gate</div>
+            <div class="stat-sub">12V Gear Motor</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-grid">
+        <!-- Live Camera Thumb -->
+        <div class="card camera-thumb-card">
+          <div class="card-header">
+            <h2 class="card-title">📷 ESP32-CAM Last Frame</h2>
+            <div class="live-badge">LIVE</div>
+          </div>
+          <div class="camera-thumb-wrap" id="ov-camera-wrap">
+            <div class="no-feed">
+              <div style="font-size:3rem">📷</div>
+              <p>Waiting for camera frame...</p>
+              <p class="hint">ESP32-CAM → Firebase → Dashboard</p>
+            </div>
+          </div>
+          <div class="cam-meta" id="ov-cam-meta">Last capture: —</div>
+        </div>
+
+        <!-- IR + RFID Live -->
+        <div class="card sensors-live-card">
+          <div class="card-header">
+            <h2 class="card-title">⚡ Live Sensor Feed</h2>
+            <span class="card-tag">Real-time</span>
+          </div>
+          <!-- IR Status -->
+          <div class="sensor-row" id="ir-live-row">
+            <div class="sensor-label-row">
+              <span class="sensor-tag ir">IR</span>
+              <span class="sensor-name">Motion Sensor</span>
+              <div class="ir-pulse-ring" id="ir-pulse" style="display:none"></div>
+            </div>
+            <div class="ir-status-display" id="ir-status-display">
+              <div class="ir-circle" id="ir-circle">
+                <span id="ir-label-text">NO MOTION</span>
+              </div>
+              <div class="ir-details">
+                <div class="ir-stat"><div class="ir-stat-val" id="ir-det-count">0</div><div class="ir-stat-l">Total Detections</div></div>
+                <div class="ir-stat"><div class="ir-stat-val" id="ir-last-time">—</div><div class="ir-stat-l">Last Triggered</div></div>
+                <div class="ir-stat"><div class="ir-stat-val" id="ir-zone">—</div><div class="ir-stat-l">Zone</div></div>
+              </div>
+            </div>
+          </div>
+          <hr class="divider"/>
+          <!-- RFID Last Read -->
+          <div class="sensor-row">
+            <div class="sensor-label-row">
+              <span class="sensor-tag rfid">RFID</span>
+              <span class="sensor-name">Last Animal Tag</span>
+            </div>
+            <div class="rfid-display" id="rfid-display">
+              <div class="rfid-tag-box" id="rfid-tag-hex">—</div>
+              <div class="rfid-animal" id="rfid-animal-name">Awaiting scan...</div>
+              <div class="rfid-time" id="rfid-time">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GPS Mini Map -->
+        <div class="card gps-mini-card">
+          <div class="card-header">
+            <h2 class="card-title">📍 GPS Location</h2>
+            <div class="gps-fix-badge" id="gps-fix-badge">NO FIX</div>
+          </div>
+          <div id="overview-map" class="mini-map"></div>
+          <div class="gps-coords" id="gps-coords-text">Waiting for GPS fix...</div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="card events-card">
+          <div class="card-header">
+            <h2 class="card-title">📋 Event Stream</h2>
+            <button class="btn-xs" onclick="navigateTo('events')">View All</button>
+          </div>
+          <div class="event-stream" id="ov-event-stream">
+            <div class="no-events">No events yet. Waiting for sensor data...</div>
+          </div>
+        </div>
+
+        <!-- Water Level -->
+        <div class="card water-ov-card">
+          <div class="card-header">
+            <h2 class="card-title">💧 Water Level</h2>
+            <span class="card-tag">HC-SR04</span>
+          </div>
+          <div class="water-gauge-wrap">
+            <div class="water-tank" id="water-tank-ov">
+              <div class="water-fill" id="water-fill-ov" style="height:0%">
+                <div class="water-waves"></div>
+              </div>
+              <div class="water-pct-label" id="water-pct-label">—%</div>
+            </div>
+            <div class="water-stats-col">
+              <div class="water-stat"><div class="wstat-val" id="wstat-dist">—</div><div class="wstat-l">Distance (cm)</div></div>
+              <div class="water-stat"><div class="wstat-val" id="wstat-lvl">—</div><div class="wstat-l">Level (%)</div></div>
+              <div class="water-stat"><div class="wstat-val good" id="wstat-status">—</div><div class="wstat-l">Status</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CAMERA PAGE ===== -->
+    <section class="page" id="page-camera">
+      <div class="camera-layout">
+        <div class="card camera-main-card">
+          <div class="card-header">
+            <h2 class="card-title">📷 ESP32-CAM Live Feed</h2>
+            <div class="cam-controls">
+              <div class="live-badge" id="cam-live-status">OFFLINE</div>
+              <button class="btn-primary sm" id="capture-btn" onclick="triggerCapture()">⚡ Capture</button>
+            </div>
+          </div>
+          <div class="camera-frame" id="camera-frame">
+            <div class="no-feed tall">
+              <div style="font-size:4rem">📷</div>
+              <p>No camera frame received</p>
+              <p class="hint">The ESP32-CAM should write its captured image (base64) to:<br>
+              <code>Firebase → /camera/last_capture_url</code></p>
+            </div>
+          </div>
+          <div class="camera-footer">
+            <span id="cam-timestamp">Last frame: —</span>
+            <span id="cam-resolution">—</span>
+          </div>
+        </div>
+
+        <div class="card camera-info-card">
+          <div class="card-header">
+            <h2 class="card-title">Camera Stats</h2>
+          </div>
+          <div class="cam-stat-list">
+            <div class="cam-stat-item">
+              <span class="cs-label">Status</span>
+              <span class="cs-val" id="c-status">Offline</span>
+            </div>
+            <div class="cam-stat-item">
+              <span class="cs-label">Frame Count</span>
+              <span class="cs-val" id="c-frames">0</span>
+            </div>
+            <div class="cam-stat-item">
+              <span class="cs-label">Last Capture</span>
+              <span class="cs-val" id="c-last">—</span>
+            </div>
+            <div class="cam-stat-item">
+              <span class="cs-label">Stream URL</span>
+              <span class="cs-val" id="c-stream">—</span>
+            </div>
+            <div class="cam-stat-item">
+              <span class="cs-label">Firebase Path</span>
+              <span class="cs-val mono">/camera</span>
+            </div>
+          </div>
+
+          <div class="esp-info-box">
+            <div class="esp-info-title">📡 ESP32-CAM Firebase Write</div>
+            <pre class="code-block">// Write to Firebase path:
+{
+  "camera": {
+    "last_capture_url": "&lt;base64 or URL&gt;",
+    "timestamp": millis(),
+    "stream_active": true
+  }
+}</pre>
+          </div>
+
+          <!-- Detection overlay info -->
+          <div class="detection-trigger-box">
+            <div class="esp-info-title">🎯 Auto-Capture on IR Trigger</div>
+            <div class="toggle-row">
+              <span>Capture on motion</span>
+              <label class="toggle" id="auto-capture-toggle">
+                <input type="checkbox" id="auto-cap-cb" onchange="setAutoCapture(this.checked)"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SENSORS PAGE (IR + Details) ===== -->
+    <section class="page" id="page-sensors">
+      <div class="sensors-layout">
+        <!-- IR Sensor -->
+        <div class="card ir-card">
+          <div class="card-header">
+            <h2 class="card-title">⚡ IR Motion Sensor</h2>
+            <span class="card-tag ir">ESP32 Node-1</span>
+          </div>
+          <div class="ir-big-display" id="ir-big-display">
+            <div class="ir-radar">
+              <div class="radar-ring r1"></div>
+              <div class="radar-ring r2"></div>
+              <div class="radar-ring r3"></div>
+              <div class="radar-center" id="ir-radar-center">
+                <span id="ir-big-label">IDLE</span>
+              </div>
+            </div>
+            <div class="ir-big-stats">
+              <div class="ir-big-stat">
+                <div class="ibs-val" id="ibs-count">0</div>
+                <div class="ibs-l">Total Detections</div>
+              </div>
+              <div class="ir-big-stat">
+                <div class="ibs-val" id="ibs-today">0</div>
+                <div class="ibs-l">Today</div>
+              </div>
+              <div class="ir-big-stat">
+                <div class="ibs-val" id="ibs-last">—</div>
+                <div class="ibs-l">Last Triggered</div>
+              </div>
+              <div class="ir-big-stat">
+                <div class="ibs-val" id="ibs-zone">Zone A</div>
+                <div class="ibs-l">Monitor Zone</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-header" style="margin-top:20px">
+            <h3 class="card-title" style="font-size:0.9rem">Detection Timeline (last 24h)</h3>
+          </div>
+          <canvas id="ir-timeline-chart" height="120"></canvas>
+        </div>
+
+        <!-- RFID on this page too -->
+        <div class="card rfid-sensor-card">
+          <div class="card-header">
+            <h2 class="card-title">🏷️ RFID Reader</h2>
+            <span class="card-tag rfid">ESP32 Node-2</span>
+          </div>
+          <div class="rfid-scanner-anim" id="rfid-anim">
+            <div class="rfid-card-icon">
+              <svg viewBox="0 0 60 40" fill="none">
+                <rect x="1" y="1" width="58" height="38" rx="4" stroke="#00e5a0" stroke-width="1.5"/>
+                <rect x="8" y="8" width="12" height="10" rx="1" stroke="#00e5a0" stroke-width="1.5"/>
+                <line x1="8" y1="24" x2="28" y2="24" stroke="#3d6b5a" stroke-width="1.5"/>
+                <line x1="8" y1="28" x2="22" y2="28" stroke="#3d6b5a" stroke-width="1.5"/>
+                <line x1="8" y1="32" x2="18" y2="32" stroke="#3d6b5a" stroke-width="1.5"/>
+              </svg>
+            </div>
+            <div class="scan-line" id="scan-line"></div>
+          </div>
+          <div class="rfid-result-box" id="rfid-result-big">
+            <div class="rfid-hex-big" id="rfid-hex-big">— — — —</div>
+            <div class="rfid-name-big" id="rfid-name-big">No animal detected</div>
+            <div class="rfid-time-big" id="rfid-time-big">—</div>
+          </div>
+          <div class="esp-info-box" style="margin-top:12px">
+            <div class="esp-info-title">Firebase Path</div>
+            <code class="inline-code">/sensors/rfid</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== RFID PAGE ===== -->
+    <section class="page" id="page-rfid">
+      <div class="rfid-layout">
+        <div class="card rfid-main-card">
+          <div class="card-header">
+            <h2 class="card-title">🏷️ RFID Animal Tag Log</h2>
+            <button class="btn-primary sm" onclick="clearRFIDLog()">Clear Log</button>
+          </div>
+          <div class="rfid-big-scan" id="rfid-big-scan">
+            <div class="rfid-current">
+              <div class="rfc-label">CURRENT TAG</div>
+              <div class="rfc-hex" id="rfc-hex">—</div>
+              <div class="rfc-animal" id="rfc-animal">Awaiting scan...</div>
+              <div class="rfc-time" id="rfc-time">—</div>
+            </div>
+          </div>
+          <div class="rfid-table-wrap">
+            <table class="data-table" id="rfid-log-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Tag ID</th>
+                  <th>Animal</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="rfid-log-body">
+                <tr><td colspan="5" class="empty-row">No RFID reads yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card rfid-info-card">
+          <div class="card-header"><h2 class="card-title">📖 Animal Registry</h2></div>
+          <div class="rfid-registry" id="rfid-registry">
+            <div class="reg-note">Map tag IDs to animal names in Firebase:<br><code class="inline-code">/registry/&lt;tagID&gt;: "Elephant-007"</code></div>
+          </div>
+          <div class="esp-info-box" style="margin-top:12px">
+            <div class="esp-info-title">ESP32 Write Schema</div>
+            <pre class="code-block">db.getReference("/sensors/rfid")
+  .setValue({
+    "tag_id": tagHex,
+    "animal_name": animalName,
+    "timestamp": millis(),
+    "read_count": ++count
+  });</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GPS PAGE ===== -->
+    <section class="page" id="page-gps">
+      <div class="gps-layout">
+        <div class="card gps-map-card">
+          <div class="card-header">
+            <h2 class="card-title">📍 GPS Live Tracker — NEO-6M</h2>
+            <div class="gps-fix-badge" id="gps-page-fix-badge">NO FIX</div>
+          </div>
+          <div id="gps-map" class="gps-map-full"></div>
+        </div>
+        <div class="card gps-info-card">
+          <div class="card-header"><h2 class="card-title">GPS Data</h2></div>
+          <div class="gps-data-list">
+            <div class="gps-data-item">
+              <span class="gd-icon">🌐</span>
+              <div>
+                <div class="gd-label">Latitude</div>
+                <div class="gd-val mono" id="gd-lat">—</div>
+              </div>
+            </div>
+            <div class="gps-data-item">
+              <span class="gd-icon">🌐</span>
+              <div>
+                <div class="gd-label">Longitude</div>
+                <div class="gd-val mono" id="gd-lng">—</div>
+              </div>
+            </div>
+            <div class="gps-data-item">
+              <span class="gd-icon">🏃</span>
+              <div>
+                <div class="gd-label">Speed</div>
+                <div class="gd-val" id="gd-speed">— km/h</div>
+              </div>
+            </div>
+            <div class="gps-data-item">
+              <span class="gd-icon">⛰️</span>
+              <div>
+                <div class="gd-label">Altitude</div>
+                <div class="gd-val" id="gd-alt">— m</div>
+              </div>
+            </div>
+            <div class="gps-data-item">
+              <span class="gd-icon">🛰️</span>
+              <div>
+                <div class="gd-label">Satellites</div>
+                <div class="gd-val" id="gd-sats">—</div>
+              </div>
+            </div>
+            <div class="gps-data-item">
+              <span class="gd-icon">🕐</span>
+              <div>
+                <div class="gd-label">Last Fix</div>
+                <div class="gd-val" id="gd-time">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="gps-trail-info">
+            <div class="card-header" style="margin-top:8px"><h3 class="card-title" style="font-size:0.88rem">📡 Trail History</h3></div>
+            <div class="trail-list" id="trail-list">
+              <div class="no-events">No trail data yet</div>
+            </div>
+            <button class="btn-secondary full" onclick="clearTrail()">🗑 Clear Trail</button>
+          </div>
+          <div class="esp-info-box">
+            <div class="esp-info-title">Write GPS to Firebase</div>
+            <pre class="code-block">db.getReference("/sensors/gps")
+  .setValue({
+    "lat": gps.location.lat(),
+    "lng": gps.location.lng(),
+    "speed_kmh": gps.speed.kmph(),
+    "altitude_m": gps.altitude.meters(),
+    "satellites": gps.satellites.value(),
+    "fix": true,
+    "timestamp": millis()
+  });</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== WATER PAGE ===== -->
+    <section class="page" id="page-water">
+      <div class="water-layout">
+        <div class="card water-main-card">
+          <div class="card-header">
+            <h2 class="card-title">💧 Water Level Monitor — HC-SR04 Ultrasonic</h2>
+            <span class="card-tag">ESP32 Node-2</span>
+          </div>
+          <div class="water-big-display">
+            <div class="water-tank-big" id="water-tank-big">
+              <div class="water-fill-big" id="water-fill-big" style="height:0%">
+                <div class="water-waves big"></div>
+              </div>
+              <div class="water-grid-lines">
+                <div class="wgl" style="bottom:75%"><span>75%</span></div>
+                <div class="wgl" style="bottom:50%"><span>50%</span></div>
+                <div class="wgl" style="bottom:25%"><span>25%</span></div>
+              </div>
+              <div class="water-pct-big" id="water-pct-big">—%</div>
+            </div>
+            <div class="water-info-panel">
+              <div class="wip-stat">
+                <div class="wip-icon">📏</div>
+                <div class="wip-val" id="wip-dist">— cm</div>
+                <div class="wip-l">Distance</div>
+              </div>
+              <div class="wip-stat">
+                <div class="wip-icon">💧</div>
+                <div class="wip-val" id="wip-pct">—%</div>
+                <div class="wip-l">Water Level</div>
+              </div>
+              <div class="wip-stat">
+                <div class="wip-icon">📦</div>
+                <div class="wip-val" id="wip-tank">100 cm</div>
+                <div class="wip-l">Tank Height</div>
+              </div>
+              <div class="wip-stat">
+                <div class="wip-icon">🚦</div>
+                <div class="wip-val" id="wip-status-val">—</div>
+                <div class="wip-l">Status</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-header" style="margin-top:16px"><h3 class="card-title" style="font-size:0.88rem">Water Level History (last 24h)</h3></div>
+          <canvas id="water-chart" height="130"></canvas>
+        </div>
+        <div class="card water-settings-card">
+          <div class="card-header"><h2 class="card-title">⚙️ Thresholds & Alerts</h2></div>
+          <div class="threshold-group">
+            <label>Low Water Alert (%)</label>
+            <input type="range" min="5" max="50" value="20" id="low-thresh" oninput="updateThresholdLabel('low', this.value)"/>
+            <span id="low-thresh-label">20%</span>
+          </div>
+          <div class="threshold-group">
+            <label>Full Tank (%)</label>
+            <input type="range" min="50" max="100" value="90" id="high-thresh" oninput="updateThresholdLabel('high', this.value)"/>
+            <span id="high-thresh-label">90%</span>
+          </div>
+          <div class="threshold-group">
+            <label>Tank Height (cm)</label>
+            <input type="number" value="100" id="tank-height-input" onchange="updateTankHeight(this.value)" style="width:80px;padding:6px 10px;background:rgba(0,229,160,0.06);border:1px solid var(--border);border-radius:8px;color:var(--text);"/>
+          </div>
+          <hr class="divider"/>
+          <div class="card-header"><h3 class="card-title" style="font-size:0.88rem">Motor Auto-Control</h3></div>
+          <div class="toggle-row">
+            <span>Auto-open gate on low water</span>
+            <label class="toggle">
+              <input type="checkbox" id="water-motor-auto"/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="esp-info-box" style="margin-top:auto">
+            <div class="esp-info-title">Firebase Path</div>
+            <pre class="code-block">/sensors/ultrasonic:
+{
+  "distance_cm": 45.2,
+  "water_level_pct": 55,
+  "tank_height_cm": 100,
+  "timestamp": ...
+}</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== MOTOR PAGE ===== -->
+    <section class="page" id="page-motor">
+      <div class="motor-layout">
+        <div class="card motor-main-card">
+          <div class="card-header">
+            <h2 class="card-title">⚙️ 12V Gear Motor — Gate Control</h2>
+            <span class="card-tag motor">Actuator</span>
+          </div>
+
+          <!-- Motor State Visual -->
+          <div class="motor-visual" id="motor-visual">
+            <div class="gate-visual" id="gate-visual">
+              <div class="gate-post left"></div>
+              <div class="gate-bar" id="gate-bar"></div>
+              <div class="gate-post right"></div>
+            </div>
+            <div class="motor-state-label" id="motor-state-label">UNKNOWN</div>
+          </div>
+
+          <!-- Control Buttons -->
+          <div class="motor-controls" id="motor-controls">
+            <button class="motor-btn open" id="btn-open" onclick="sendMotorCommand('OPEN')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              OPEN
+            </button>
+            <button class="motor-btn stop" id="btn-stop" onclick="sendMotorCommand('STOP')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+              STOP
+            </button>
+            <button class="motor-btn close" id="btn-close" onclick="sendMotorCommand('CLOSE')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              CLOSE
+            </button>
+          </div>
+
+          <!-- Auto rules -->
+          <div class="motor-auto-rules">
+            <div class="card-header"><h3 class="card-title" style="font-size:0.9rem">🤖 Auto-Control Rules</h3></div>
+            <div class="rule-item">
+              <div class="rule-info">
+                <div class="rule-name">Auto-open on RFID scan</div>
+                <div class="rule-desc">Opens gate when registered animal tag detected</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="rule-rfid" onchange="updateRule('rfid', this.checked)"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="rule-item">
+              <div class="rule-info">
+                <div class="rule-name">Auto-close after 30s</div>
+                <div class="rule-desc">Automatically closes gate 30 seconds after opening</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="rule-autoclose" onchange="updateRule('autoclose', this.checked)"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="rule-item">
+              <div class="rule-info">
+                <div class="rule-name">Alert on manual override</div>
+                <div class="rule-desc">Send alert when motor commanded manually</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="rule-alert" checked onchange="updateRule('alert', this.checked)"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card motor-log-card">
+          <div class="card-header"><h2 class="card-title">Motor Activity Log</h2></div>
+          <div class="motor-log-list" id="motor-log-list">
+            <div class="no-events">No motor activity yet</div>
+          </div>
+          <div class="esp-info-box" style="margin-top:auto">
+            <div class="esp-info-title">ESP32 reads command from:</div>
+            <pre class="code-block">/actuators/motor/command
+// Values: "OPEN" | "CLOSE" | "STOP"
+
+// ESP32 writes back:
+/actuators/motor/state
+// Values: "OPEN" | "CLOSED" | "MOVING"</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== EVENTS PAGE ===== -->
+    <section class="page" id="page-events">
+      <div class="card full-card">
+        <div class="card-header">
+          <h2 class="card-title">📋 Full Event Log</h2>
+          <div style="display:flex;gap:8px">
+            <select id="event-filter" onchange="filterEvents()" class="filter-select">
+              <option value="">All Events</option>
+              <option value="IR">IR Motion</option>
+              <option value="RFID">RFID</option>
+              <option value="MOTOR">Motor</option>
+              <option value="GPS">GPS</option>
+              <option value="WATER">Water</option>
+              <option value="CAM">Camera</option>
+              <option value="SYSTEM">System</option>
+            </select>
+            <button class="btn-primary sm" onclick="clearEvents()">Clear</button>
+          </div>
+        </div>
+        <div class="events-full-list" id="events-full-list">
+          <div class="no-events">Waiting for events from Firebase...</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-inner">
+      <div class="loading-logo">
+        <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+          <circle cx="30" cy="30" r="28" stroke="#00e5a0" stroke-width="2"/>
+          <path d="M16 30c0-7.7 6.3-14 14-14s14 6.3 14 14" stroke="#00e5a0" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="30" cy="36" r="6" fill="#00e5a0"/>
+        </svg>
+      </div>
+      <div class="loading-title">WildWatch IoT</div>
+      <div class="loading-sub">Connecting to Firebase...</div>
+      <div class="loading-bar-wrap"><div class="loading-bar"><div class="loading-fill" id="lf"></div></div></div>
+      <div class="loading-status" id="loading-status">Initializing...</div>
+    </div>
+  </div>
+
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- App Scripts -->
+  <script src="firebase-init.js"></script>
+  <script src="sensors.js"></script>
+  <script src="gps-map.js"></script>
+  <script src="motor.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
